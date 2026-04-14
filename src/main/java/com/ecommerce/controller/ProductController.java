@@ -80,6 +80,7 @@ public class ProductController extends VBox {
         // Reactive Filters: Instant updates on selection change
         categoryFilter.setOnAction(e -> { currentPage = 1; loadData(); });
         sortCombo.setOnAction(e -> { currentPage = 1; loadData(); });
+        searchField.textProperty().addListener((o, ov, nv) -> { currentPage = 1; loadData(); });
 
         Button searchBtn = new Button("🔍  Search");
         searchBtn.getStyleClass().add("button-primary");
@@ -159,7 +160,17 @@ public class ProductController extends VBox {
 
         paginationBar.getChildren().addAll(prevBtn, pageLabel, nextBtn);
 
-        this.getChildren().addAll(header, searchCard, productTable, paginationBar);
+        VBox mainLayout = new VBox(20);
+        mainLayout.setPadding(new Insets(20));
+        mainLayout.getChildren().addAll(header, searchCard, productTable, paginationBar);
+
+        ScrollPane scrollPane = new ScrollPane(mainLayout);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-padding: 0;");
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
+
+        this.getChildren().add(scrollPane);
         loadInitialData();
     }
 

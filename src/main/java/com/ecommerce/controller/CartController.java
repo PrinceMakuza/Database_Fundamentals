@@ -9,6 +9,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.collections.FXCollections;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -20,6 +21,9 @@ public class CartController extends VBox {
     private final CartService cartService;
     private final VBox itemsContainer;
     private final Label totalLabel;
+    private final TextField searchField;
+    private final ComboBox<String> sortCombo;
+    private List<CartItem> allItems;
 
     public CartController() {
         this.cartService = new CartService();
@@ -30,6 +34,23 @@ public class CartController extends VBox {
         // Header
         Label title = new Label("🛒  Your Shopping Cart");
         title.getStyleClass().add("content-title");
+
+        // Search & Sort Bar
+        HBox actionBar = new HBox(15);
+        actionBar.setAlignment(Pos.CENTER_LEFT);
+        actionBar.setPadding(new Insets(0, 0, 10, 0));
+
+        searchField = new TextField();
+        searchField.setPromptText("🔍 Search items in cart...");
+        searchField.setPrefWidth(250);
+        searchField.textProperty().addListener((o, ov, nv) -> filterAndDisplay());
+
+        sortCombo = new ComboBox<>(FXCollections.observableArrayList("Name (A-Z)", "Price (Low to High)", "Price (High to Low)"));
+        sortCombo.setPromptText("Sort By");
+        sortCombo.setPrefWidth(180);
+        sortCombo.setOnAction(e -> filterAndDisplay());
+
+        actionBar.getChildren().addAll(searchField, sortCombo);
 
         itemsContainer = new VBox(15);
         ScrollPane scrollPane = new ScrollPane(itemsContainer);
@@ -53,33 +74,50 @@ public class CartController extends VBox {
 
         footer.getChildren().addAll(totalLabel, checkoutBtn);
 
-        this.getChildren().addAll(title, scrollPane, footer);
+        this.getChildren().addAll(title, actionBar, scrollPane, footer);
         
         loadCart();
     }
 
     public void loadCart() {
-        itemsContainer.getChildren().clear();
         try {
             int currentUserId = UserContext.getCurrentUserId();
-            List<CartItem> items = cartService.getCartItems(currentUserId);
-            double total = 0;
-
-            for (CartItem item : items) {
-                total += item.getSubtotal();
-                itemsContainer.getChildren().add(buildItemRow(item));
-            }
-
-            totalLabel.setText(String.format("Total: $%.2f", total));
-            
-            if (items.isEmpty()) {
-                Label emptyLabel = new Label("Your cart is empty. Add some products to get started!");
-                emptyLabel.getStyleClass().add("label-muted");
-                emptyLabel.setStyle("-fx-font-size: 16px;");
-                itemsContainer.getChildren().add(emptyLabel);
-            }
+            allItems = cartService.getCartItems(currentUserId);
+            filterAndDisplay();
         } catch (SQLException e) {
             showError("Failed to load cart: " + e.getMessage());
+        }
+    }
+
+    private void filterAndDisplay() {
+        itemsContainer.getChildren().clear();
+        if (allItems == null) return;
+
+        String search = searchField.getText().toLowerCase();
+        List<CartItem> filtered = allItems.stream()
+            .filter(i -> i.getProductName().toLowerCase().contains(search))
+            .collect(java.util.stream.Collectors.toList());
+
+        String sort = sortCombo.getValue();
+        if (sort != null) {
+            if (sort.equals("Name (A-Z)")) filtered.sort(java.util.Comparator.comparing(CartItem::getProductName));
+            else if (sort.equals("Price (Low to High)")) filtered.sort(java.util.Comparator.comparing(CartItem::getUnitPrice));
+            else if (sort.equals("Price (High to Low)")) filtered.sort(java.util.Comparator.comparing(CartItem::getUnitPrice).reversed());
+        }
+
+        double total = 0;
+        for (CartItem item : filtered) {
+            total += item.getSubtotal();
+            itemsContainer.getChildren().add(buildItemRow(item));
+        }
+
+        totalLabel.setText(String.format("Total: $%.2f", total));
+
+        if (filtered.isEmpty()) {
+            Label emptyLabel = new Label(allItems.isEmpty() ? "Your cart is empty." : "No matching items found.");
+            emptyLabel.getStyleClass().add("label-muted");
+            emptyLabel.setStyle("-fx-font-size: 16px;");
+            itemsContainer.getChildren().add(emptyLabel);
         }
     }
 

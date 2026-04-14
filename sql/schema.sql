@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS Users (
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    location VARCHAR(255),
     role VARCHAR(20) NOT NULL DEFAULT 'CUSTOMER' CHECK (role IN ('ADMIN', 'CUSTOMER'))
 );
 
@@ -35,8 +36,6 @@ CREATE TABLE IF NOT EXISTS Products (
 );
 
 -- For fast cart item lookups
-
--- 4. Orders Table
 
 -- 4. Orders Table
 CREATE TABLE IF NOT EXISTS Orders (

@@ -71,7 +71,10 @@ public class DashboardController extends BorderPane {
             Tab historyTab = new Tab("📜  Order History", orderHistoryController);
             historyTab.setClosable(false);
 
-            userTabs.getTabs().addAll(browseTab, cartTab, historyTab);
+            Tab profileTab = new Tab("👤  Profile", new ProfileController());
+            profileTab.setClosable(false);
+
+            userTabs.getTabs().addAll(browseTab, cartTab, historyTab, profileTab);
 
             // AUTO-REFRESH LOGIC: Refresh cart or history when their tabs are selected
             userTabs.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
@@ -89,6 +92,7 @@ public class DashboardController extends BorderPane {
         ScrollPane scrollPane = new ScrollPane(contentHolder);
         scrollPane.setFitToWidth(true);
         scrollPane.setFitToHeight(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.getStyleClass().add("content-scroll-pane");
         
         this.setCenter(scrollPane);

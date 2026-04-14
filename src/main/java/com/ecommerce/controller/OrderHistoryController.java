@@ -11,6 +11,7 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.collections.FXCollections;
 import java.sql.SQLException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -21,6 +22,9 @@ import java.util.List;
 public class OrderHistoryController extends VBox {
     private final OrderService orderService;
     private final VBox ordersContainer;
+    private final TextField searchField;
+    private final ComboBox<String> sortCombo;
+    private List<Order> allOrders;
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm");
 
     public OrderHistoryController() {
@@ -34,34 +38,69 @@ public class OrderHistoryController extends VBox {
         title.setFont(Font.font("System", FontWeight.BOLD, 24));
         title.setTextFill(Color.WHITE);
 
+        // Search & Sort Bar
+        HBox bar = new HBox(15);
+        bar.setAlignment(Pos.CENTER_LEFT);
+        bar.setPadding(new Insets(10, 0, 10, 0));
+
+        searchField = new TextField();
+        searchField.setPromptText("🔍 Search by Order ID...");
+        searchField.setPrefWidth(220);
+        searchField.textProperty().addListener((o, ov, nv) -> filterAndDisplay());
+
+        sortCombo = new ComboBox<>(FXCollections.observableArrayList("Date (Newest)", "Date (Oldest)", "Amount (High)", "Amount (Low)"));
+        sortCombo.setPromptText("Sort By");
+        sortCombo.setPrefWidth(180);
+        sortCombo.setOnAction(e -> filterAndDisplay());
+
+        bar.getChildren().addAll(searchField, sortCombo);
+
         ordersContainer = new VBox(15);
         ScrollPane scrollPane = new ScrollPane(ordersContainer);
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
-        this.getChildren().addAll(title, scrollPane);
+        this.getChildren().addAll(title, bar, scrollPane);
         
         loadOrders();
     }
 
     public void loadOrders() {
-        ordersContainer.getChildren().clear();
         try {
-            List<Order> orders = orderService.getUserOrderHistory(UserContext.getCurrentUserId());
-            
-            if (orders.isEmpty()) {
-                Label emptyLabel = new Label("No orders found yet.");
-                emptyLabel.setTextFill(Color.GRAY);
-                ordersContainer.getChildren().add(emptyLabel);
-                return;
-            }
-
-            for (Order order : orders) {
-                ordersContainer.getChildren().add(createOrderCard(order));
-            }
+            allOrders = orderService.getUserOrderHistory(UserContext.getCurrentUserId());
+            filterAndDisplay();
         } catch (SQLException e) {
             showError("Failed to load orders: " + e.getMessage());
+        }
+    }
+
+    private void filterAndDisplay() {
+        ordersContainer.getChildren().clear();
+        if (allOrders == null) return;
+
+        String search = searchField.getText().trim();
+        List<Order> filtered = allOrders.stream()
+            .filter(o -> search.isEmpty() || String.valueOf(o.getOrderId()).contains(search))
+            .collect(java.util.stream.Collectors.toList());
+
+        String sort = sortCombo.getValue();
+        if (sort != null) {
+            if (sort.equals("Date (Newest)")) filtered.sort(java.util.Comparator.comparing(Order::getOrderDate).reversed());
+            else if (sort.equals("Date (Oldest)")) filtered.sort(java.util.Comparator.comparing(Order::getOrderDate));
+            else if (sort.equals("Amount (High)")) filtered.sort(java.util.Comparator.comparing(Order::getTotalAmount).reversed());
+            else if (sort.equals("Amount (Low)")) filtered.sort(java.util.Comparator.comparing(Order::getTotalAmount));
+        }
+
+        if (filtered.isEmpty()) {
+            Label emptyLabel = new Label(allOrders.isEmpty() ? "No orders found yet." : "No matching orders found.");
+            emptyLabel.setTextFill(Color.GRAY);
+            ordersContainer.getChildren().add(emptyLabel);
+            return;
+        }
+
+        for (Order order : filtered) {
+            ordersContainer.getChildren().add(createOrderCard(order));
         }
     }
 

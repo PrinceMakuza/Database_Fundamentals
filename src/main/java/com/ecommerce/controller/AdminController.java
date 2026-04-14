@@ -13,6 +13,8 @@ import com.ecommerce.dao.ReviewDAO;
 import com.ecommerce.dao.DatabaseConnection;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -20,11 +22,13 @@ import javafx.scene.layout.*;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ObservableValue;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Enhanced AdminController provides comprehensive management for:
@@ -43,6 +47,10 @@ public class AdminController extends VBox {
     private final ObservableList<User> userList = FXCollections.observableArrayList();
     private final ObservableList<Order> orderList = FXCollections.observableArrayList();
     private final ObservableList<Review> reviewList = FXCollections.observableArrayList();
+
+    // Search & Sort Controls
+    private TextField productSearch, catSearch, userSearch, orderSearch, reviewSearch, invSearch;
+    private ComboBox<String> productSort, userSort, orderSort, reviewSort, invSort;
 
     // Fields for Product/Category Forms (keep for quick inline add)
     private List<Category> categories;
@@ -98,7 +106,13 @@ public class AdminController extends VBox {
         reviewBtn.setOnAction(e -> { loadReviews(); switchTab(reviewPanel, reviewBtn, contentPane, toggleBar); });
 
         toggleBar.getChildren().addAll(prodBtn, catBtn, userBtn, orderBtn, invBtn, reviewBtn);
-        this.getChildren().addAll(header, toggleBar, contentPane);
+        ScrollPane scrollPane = new ScrollPane(contentPane);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setStyle("-fx-background-color: transparent; -fx-background: transparent; -fx-padding: 0;");
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
+
+        this.getChildren().addAll(header, toggleBar, scrollPane);
         loadInitialData();
     }
 
@@ -123,12 +137,22 @@ public class AdminController extends VBox {
 
     private VBox buildProductPanel() {
         VBox panel = new VBox(15);
-        HBox header = new HBox(10);
+        HBox bar = new HBox(10); bar.setAlignment(Pos.CENTER_LEFT);
         Button add = new Button("➕ Add New Product"); add.getStyleClass().add("button-success");
         Button edit = new Button("✏ Edit Selected"); edit.getStyleClass().add("button-primary");
         Button del = new Button("🗑 Delete Selected"); del.getStyleClass().add("button-danger");
         Button seed = new Button("🌱 Seed Samples"); seed.getStyleClass().add("button-warning");
-        header.getChildren().addAll(add, edit, del, seed);
+        
+        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
+        productSearch = new TextField(); productSearch.setPromptText("🔍 Search products...");
+        productSearch.setPrefWidth(180);
+        productSearch.textProperty().addListener((o, ov, nv) -> loadInitialData());
+
+        productSort = new ComboBox<>(FXCollections.observableArrayList("ID (Oldest First)", "ID (Newest First)", "Name (A-Z)", "Name (Z-A)", "Price (Low to High)", "Price (High to Low)"));
+        productSort.setValue("ID (Oldest First)");
+        productSort.setOnAction(e -> loadInitialData());
+
+        bar.getChildren().addAll(add, edit, del, seed, spacer, productSearch, productSort);
 
         TableView<Product> table = createProductTable();
         add.setOnAction(e -> handleProductDialog(null));
@@ -136,69 +160,101 @@ public class AdminController extends VBox {
         del.setOnAction(e -> { Product s = table.getSelectionModel().getSelectedItem(); if (s != null) handleDeleteProduct(s); });
         seed.setOnAction(e -> handleSeedData());
 
-        panel.getChildren().addAll(header, table);
+        panel.getChildren().addAll(bar, table);
         return panel;
     }
 
     private VBox buildCategoryPanel() {
         VBox panel = new VBox(15);
-        HBox header = new HBox(10);
+        HBox bar = new HBox(10); bar.setAlignment(Pos.CENTER_LEFT);
         Button add = new Button("➕ Add Category"); add.getStyleClass().add("button-success");
         Button edit = new Button("✏ Edit Selected"); edit.getStyleClass().add("button-primary");
         Button del = new Button("🗑 Delete Selected"); del.getStyleClass().add("button-danger");
-        header.getChildren().addAll(add, edit, del);
+        
+        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
+        catSearch = new TextField(); catSearch.setPromptText("🔍 Search categories...");
+        bar.getChildren().addAll(add, edit, del, spacer, catSearch);
 
         TableView<Category> table = createCategoryTable();
         add.setOnAction(e -> handleCategoryDialog(null));
         edit.setOnAction(e -> { Category s = table.getSelectionModel().getSelectedItem(); if (s != null) handleCategoryDialog(s); });
         del.setOnAction(e -> { Category s = table.getSelectionModel().getSelectedItem(); if (s != null) handleDeleteCategory(s); });
 
-        panel.getChildren().addAll(header, table);
+        panel.getChildren().addAll(bar, table);
         return panel;
     }
 
     private VBox buildUserPanel() {
         VBox panel = new VBox(15);
-        HBox header = new HBox(10);
-        Button add = new Button("➕ Add New User"); add.getStyleClass().add("button-success"); add.setOnAction(e -> handleUserDialog(null));
+        HBox bar = new HBox(10); bar.setAlignment(Pos.CENTER_LEFT);
+        Button add = new Button("➕ Add New User"); add.getStyleClass().add("button-success");
         Button edit = new Button("✏ Edit Selected"); edit.getStyleClass().add("button-primary");
         Button del = new Button("🗑 Delete Selected"); del.getStyleClass().add("button-danger");
-        header.getChildren().addAll(add, edit, del);
+        
+        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
+        userSearch = new TextField(); userSearch.setPromptText("🔍 Search users...");
+        userSort = new ComboBox<>(FXCollections.observableArrayList("ID ASC", "ID DESC", "Name A-Z", "Role"));
+        userSort.setValue("ID ASC");
+        bar.getChildren().addAll(add, edit, del, spacer, userSearch, userSort);
 
         TableView<User> table = createUserTable();
+        add.setOnAction(e -> handleUserDialog(null));
         edit.setOnAction(e -> { User s = table.getSelectionModel().getSelectedItem(); if (s != null) handleUserDialog(s); });
         del.setOnAction(e -> { User s = table.getSelectionModel().getSelectedItem(); if (s != null) handleDeleteUser(s); });
 
-        panel.getChildren().addAll(header, table);
+        panel.getChildren().addAll(bar, table);
         return panel;
     }
 
     private VBox buildOrderPanel() {
         VBox panel = new VBox(15);
+        HBox bar = new HBox(10); bar.setAlignment(Pos.CENTER_LEFT);
         Label lbl = new Label("System Orders History"); lbl.getStyleClass().add("label-bright");
-        TableView<Order> table = createOrderTable();
-        panel.getChildren().addAll(lbl, table);
+        
+        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
+        orderSearch = new TextField(); orderSearch.setPromptText("🔍 Search orders...");
+        orderSort = new ComboBox<>(FXCollections.observableArrayList("Date (Newest)", "Date (Oldest)", "Amount (High)", "Status"));
+        orderSort.setValue("Date (Newest)");
+        bar.getChildren().addAll(lbl, spacer, orderSearch, orderSort);
+
+        panel.getChildren().addAll(bar, createOrderTable());
         return panel;
     }
 
     private VBox buildReviewPanel() {
         VBox panel = new VBox(15);
+        HBox bar = new HBox(10); bar.setAlignment(Pos.CENTER_LEFT);
         Label lbl = new Label("Product Reviews Moderation"); lbl.getStyleClass().add("label-bright");
-        TableView<Review> table = createReviewTable();
-        panel.getChildren().addAll(lbl, table);
+
+        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
+        reviewSearch = new TextField(); reviewSearch.setPromptText("🔍 Search reviews...");
+        reviewSort = new ComboBox<>(FXCollections.observableArrayList("Rating (High)", "Rating (Low)", "Product Name"));
+        reviewSort.setValue("Rating (High)");
+        bar.getChildren().addAll(lbl, spacer, reviewSearch, reviewSort);
+
+        panel.getChildren().addAll(bar, createReviewTable());
         return panel;
     }
 
     private VBox buildInventoryPanel() {
         VBox panel = new VBox(15);
-        HBox header = new HBox(10);
+        HBox bar = new HBox(10); bar.setAlignment(Pos.CENTER_LEFT);
         Button edit = new Button("🔧 Edit Stock Level"); edit.getStyleClass().add("button-primary");
-        header.getChildren().add(edit);
+        
+        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
+        invSearch = new TextField(); invSearch.setPromptText("🔍 Search stock...");
+        invSearch.textProperty().addListener((o, ov, nv) -> loadInitialData());
+
+        invSort = new ComboBox<>(FXCollections.observableArrayList("ID (Oldest First)", "Stock (Low to High)", "Stock (High to Low)"));
+        invSort.setValue("ID (Oldest First)");
+        invSort.setOnAction(e -> loadInitialData());
+
+        bar.getChildren().addAll(edit, spacer, invSearch, invSort);
 
         TableView<Product> table = createInventoryTable();
         edit.setOnAction(e -> { Product s = table.getSelectionModel().getSelectedItem(); if (s != null) handleInventoryDialog(s); });
 
-        panel.getChildren().addAll(header, table);
+        panel.getChildren().addAll(bar, table);
         return panel;
     }
 
@@ -215,7 +271,16 @@ public class AdminController extends VBox {
     }
 
     private TableView<Category> createCategoryTable() {
-        TableView<Category> t = new TableView<>(categoryList);
+        FilteredList<Category> filtered = new FilteredList<>(categoryList, p -> true);
+        if (catSearch != null) {
+            catSearch.textProperty().addListener((o, ov, nv) -> {
+                filtered.setPredicate(cat -> {
+                    if (nv == null || nv.isEmpty()) return true;
+                    return cat.getName().toLowerCase().contains(nv.toLowerCase());
+                });
+            });
+        }
+        TableView<Category> t = new TableView<>(filtered);
         addColumn(t, "ID", 60, d -> new SimpleObjectProperty<Object>(d.getCategoryId()));
         addColumn(t, "Name", 300, d -> new SimpleStringProperty(d.getName()));
         t.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -223,17 +288,62 @@ public class AdminController extends VBox {
     }
 
     private TableView<User> createUserTable() {
-        TableView<User> t = new TableView<>(userList);
+        FilteredList<User> filtered = new FilteredList<>(userList, p -> true);
+        if (userSearch != null) {
+            userSearch.textProperty().addListener((o, ov, nv) -> {
+                filtered.setPredicate(u -> {
+                    if (nv == null || nv.isEmpty()) return true;
+                    String low = nv.toLowerCase();
+                    return u.getName().toLowerCase().contains(low) || u.getEmail().toLowerCase().contains(low);
+                });
+            });
+        }
+        SortedList<User> sorted = new SortedList<>(filtered);
+        if (userSort != null) {
+            userSort.setOnAction(e -> {
+                String val = userSort.getValue();
+                if ("ID ASC".equals(val)) sorted.setComparator(java.util.Comparator.comparing(User::getUserId));
+                else if ("ID DESC".equals(val)) sorted.setComparator(java.util.Comparator.comparing(User::getUserId).reversed());
+                else if ("Name A-Z".equals(val)) sorted.setComparator(java.util.Comparator.comparing(User::getName));
+                else if ("Role".equals(val)) sorted.setComparator(java.util.Comparator.comparing(User::getRole));
+            });
+            userSort.fireEvent(new javafx.event.ActionEvent());
+        }
+
+        TableView<User> t = new TableView<>(sorted);
         addColumn(t, "ID", 60, d -> new SimpleObjectProperty<Object>(d.getUserId()));
         addColumn(t, "Name", 200, d -> new SimpleStringProperty(d.getName()));
         addColumn(t, "Email", 250, d -> new SimpleStringProperty(d.getEmail()));
+        addColumn(t, "Location", 150, d -> new SimpleStringProperty(d.getLocation()));
         addColumn(t, "Role", 100, d -> new SimpleStringProperty(d.getRole()));
         t.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         return t;
     }
 
     private TableView<Order> createOrderTable() {
-        TableView<Order> t = new TableView<>(orderList);
+        FilteredList<Order> filtered = new FilteredList<>(orderList, p -> true);
+        if (orderSearch != null) {
+            orderSearch.textProperty().addListener((o, ov, nv) -> {
+                filtered.setPredicate(ord -> {
+                    if (nv == null || nv.isEmpty()) return true;
+                    String low = nv.toLowerCase();
+                    return ord.getUserName().toLowerCase().contains(low) || ord.getStatus().toLowerCase().contains(low);
+                });
+            });
+        }
+        SortedList<Order> sorted = new SortedList<>(filtered);
+        if (orderSort != null) {
+            orderSort.setOnAction(e -> {
+                String val = orderSort.getValue();
+                if ("Date (Newest)".equals(val)) sorted.setComparator(java.util.Comparator.comparing(Order::getOrderDate).reversed());
+                else if ("Date (Oldest)".equals(val)) sorted.setComparator(java.util.Comparator.comparing(Order::getOrderDate));
+                else if ("Amount (High)".equals(val)) sorted.setComparator(java.util.Comparator.comparing(Order::getTotalAmount).reversed());
+                else if ("Status".equals(val)) sorted.setComparator(java.util.Comparator.comparing(Order::getStatus));
+            });
+            orderSort.fireEvent(new javafx.event.ActionEvent());
+        }
+
+        TableView<Order> t = new TableView<>(sorted);
         addColumn(t, "Order ID", 80, d -> new SimpleObjectProperty<Object>(d.getOrderId()));
         addColumn(t, "Customer", 200, d -> new SimpleStringProperty(d.getUserName()));
         addColumn(t, "Total", 100, d -> new SimpleStringProperty(String.format("$%.2f", d.getTotalAmount())));
@@ -244,7 +354,28 @@ public class AdminController extends VBox {
     }
 
     private TableView<Review> createReviewTable() {
-        TableView<Review> t = new TableView<>(reviewList);
+        FilteredList<Review> filtered = new FilteredList<>(reviewList, p -> true);
+        if (reviewSearch != null) {
+            reviewSearch.textProperty().addListener((o, ov, nv) -> {
+                filtered.setPredicate(rev -> {
+                    if (nv == null || nv.isEmpty()) return true;
+                    String low = nv.toLowerCase();
+                    return rev.getProductName().toLowerCase().contains(low) || rev.getUserName().toLowerCase().contains(low) || rev.getComment().toLowerCase().contains(low);
+                });
+            });
+        }
+        SortedList<Review> sorted = new SortedList<>(filtered);
+        if (reviewSort != null) {
+            reviewSort.setOnAction(e -> {
+                String val = reviewSort.getValue();
+                if ("Rating (High)".equals(val)) sorted.setComparator(java.util.Comparator.comparing(Review::getRating).reversed());
+                else if ("Rating (Low)".equals(val)) sorted.setComparator(java.util.Comparator.comparing(Review::getRating));
+                else if ("Product Name".equals(val)) sorted.setComparator(java.util.Comparator.comparing(Review::getProductName));
+            });
+            reviewSort.fireEvent(new javafx.event.ActionEvent());
+        }
+
+        TableView<Review> t = new TableView<>(sorted);
         addColumn(t, "Product", 200, d -> new SimpleStringProperty(d.getProductName()));
         addColumn(t, "User", 150, d -> new SimpleStringProperty(d.getUserName()));
         addColumn(t, "Rating", 80, d -> new SimpleStringProperty("⭐".repeat(d.getRating())));
@@ -285,10 +416,24 @@ public class AdminController extends VBox {
         grid.add(new Label("Category:"), 0, 4); grid.add(cat, 1, 4);
 
         dialog.getDialogPane().setContent(grid);
+        
+        Button okButton = (Button) dialog.getDialogPane().lookupButton(saveBtnType);
+        okButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            try {
+                if (name.getText().trim().isEmpty()) throw new Exception("Name is required.");
+                Double.parseDouble(price.getText());
+                Integer.parseInt(stock.getText());
+                if (cat.getValue() == null) throw new Exception("Category is required.");
+            } catch (Exception ex) {
+                showAlert(Alert.AlertType.ERROR, "Validation Error", ex.getMessage().contains("empty") ? ex.getMessage() : "Invalid numeric values for Price or Stock.");
+                event.consume();
+            }
+        });
+
         dialog.setResultConverter(btn -> {
             if (btn == saveBtnType) {
                 Product p = existing != null ? existing : new Product();
-                p.setName(name.getText()); p.setDescription(desc.getText());
+                p.setName(name.getText().trim()); p.setDescription(desc.getText().trim());
                 p.setPrice(Double.parseDouble(price.getText()));
                 p.setStockQuantity(Integer.parseInt(stock.getText()));
                 String selectedCat = cat.getValue();
@@ -320,6 +465,16 @@ public class AdminController extends VBox {
         TextInputDialog dialog = new TextInputDialog(existing != null ? existing.getName() : "");
         dialog.setTitle(existing == null ? "Add Category" : "Edit Category");
         dialog.setHeaderText("Enter category name:");
+        
+        Button okButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            String name = dialog.getEditor().getText().trim();
+            if (name.isEmpty()) {
+                showAlert(Alert.AlertType.ERROR, "Validation Error", "Category name cannot be empty.");
+                event.consume();
+            }
+        });
+
         dialog.showAndWait().ifPresent(name -> {
             try {
                 if (existing == null) { Category c = new Category(); c.setName(name); categoryDAO.addCategory(c); }
@@ -344,6 +499,18 @@ public class AdminController extends VBox {
         dialog.setTitle("Update Stock");
         dialog.setHeaderText("Update stock for: " + product.getName());
         dialog.setContentText("Quantity on hand:");
+        
+        Button okButton = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
+        okButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            try {
+                int q = Integer.parseInt(dialog.getEditor().getText());
+                if (q < 0) throw new Exception();
+            } catch (Exception ex) {
+                showAlert(Alert.AlertType.ERROR, "Validation Error", "Please enter a non-negative whole number.");
+                event.consume();
+            }
+        });
+
         dialog.showAndWait().ifPresent(qty -> {
             try {
                 product.setStockQuantity(Integer.parseInt(qty));
@@ -362,18 +529,44 @@ public class AdminController extends VBox {
         GridPane grid = new GridPane(); grid.setHgap(10); grid.setVgap(10);
         TextField name = new TextField(existing != null ? existing.getName() : "");
         TextField email = new TextField(existing != null ? existing.getEmail() : "");
+        TextField location = new TextField(existing != null ? existing.getLocation() : "");
         ComboBox<String> role = new ComboBox<>(FXCollections.observableArrayList("CUSTOMER", "ADMIN"));
         role.setValue(existing != null ? existing.getRole() : "CUSTOMER");
 
         grid.add(new Label("Name:"), 0, 0); grid.add(name, 1, 0);
         grid.add(new Label("Email:"), 0, 1); grid.add(email, 1, 1);
-        grid.add(new Label("Role:"), 0, 2); grid.add(role, 1, 2);
+        grid.add(new Label("Location:"), 0, 2); grid.add(location, 1, 2);
+        grid.add(new Label("Role:"), 0, 3); grid.add(role, 1, 3);
 
         dialog.getDialogPane().setContent(grid);
+
+        Button okButton = (Button) dialog.getDialogPane().lookupButton(saveBtnType);
+        okButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            String n = name.getText().trim();
+            String e = email.getText().trim();
+            if (!Pattern.matches("^[a-zA-Z\\s]+$", n)) {
+                showAlert(Alert.AlertType.ERROR, "Validation Error", "Name can only contain letters and spaces.");
+                event.consume();
+            } else if (!Pattern.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$", e)) {
+                showAlert(Alert.AlertType.ERROR, "Validation Error", "Please enter a valid email address.");
+                event.consume();
+            }
+        });
+
         dialog.setResultConverter(btn -> {
             if (btn == saveBtnType) {
+                String nameStr = name.getText().trim();
+                String emailStr = email.getText().trim().toLowerCase();
+
                 User u = existing != null ? existing : new User();
-                u.setName(name.getText()); u.setEmail(email.getText()); u.setRole(role.getValue());
+                u.setName(nameStr); u.setEmail(emailStr); u.setRole(role.getValue()); u.setLocation(location.getText().trim());
+
+                if (existing == null) {
+                    String firstName = nameStr.split("\\s+")[0];
+                    String defaultPass = firstName + "@123";
+                    String hashed = BCrypt.hashpw(defaultPass, BCrypt.gensalt());
+                    u.setPassword(hashed);
+                }
                 return u;
             }
             return null;
@@ -432,7 +625,18 @@ public class AdminController extends VBox {
         try {
             categories = categoryDAO.getAllCategories();
             categoryList.setAll(categories);
-            productList.setAll(productService.searchProducts("", null, 1, 500, null));
+            
+            String search = (productSearch != null) ? productSearch.getText() : "";
+            String sort = (productSort != null) ? productSort.getValue() : "ID (Oldest First)";
+
+            if (invSearch != null && !invSearch.getText().isEmpty()) {
+                search = invSearch.getText();
+            }
+            if (invSort != null && invSort.isVisible() && !invSort.getValue().equals("ID (Oldest First)")) {
+                sort = invSort.getValue();
+            }
+            
+            productList.setAll(productService.searchProducts(search, null, 1, 500, sort));
         } catch (SQLException e) { e.printStackTrace(); }
     }
 

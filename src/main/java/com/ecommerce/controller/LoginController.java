@@ -22,12 +22,14 @@ public class LoginController extends StackPane {
     private static final Pattern EMAIL_PATTERN = Pattern.compile(
         "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
     );
+    private static final Pattern NAME_PATTERN = Pattern.compile("^[a-zA-Z\\s]+$");
 
     private VBox loginCard;
     private Label title;
     private Label subtitle;
     private TextField nameField;
     private TextField emailField;
+    private TextField locationField;
     private PasswordField passwordField;
     private TextField passwordVisible;
     private PasswordField confirmPasswordField;
@@ -39,6 +41,7 @@ public class LoginController extends StackPane {
 
     // Labels for register-mode fields
     private Label nameLabel;
+    private Label locationLabel;
     private Label confirmLabel;
     private HBox confirmPasswordBox;
 
@@ -50,16 +53,16 @@ public class LoginController extends StackPane {
         this.onLoginSuccess = onLoginSuccess;
         this.setStyle("-fx-background-color: #121212;");
 
-        loginCard = new VBox(14);
-        loginCard.setMaxWidth(360);
-        loginCard.setPadding(new Insets(28));
-        loginCard.setStyle("-fx-background-color: #1e1e1e; -fx-background-radius: 12; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 15, 0, 0, 8);");
+        loginCard = new VBox(18);
+        loginCard.setMaxWidth(420);
+        loginCard.setPadding(new Insets(35));
+        loginCard.setStyle("-fx-background-color: #1e1e1e; -fx-background-radius: 15; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 18, 0, 0, 10);");
 
         title = new Label("Welcome Back");
-        title.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: white;");
+        title.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: white;");
 
         subtitle = new Label("Please sign in to continue");
-        subtitle.setStyle("-fx-text-fill: #b0b0b0; -fx-font-size: 12px;");
+        subtitle.setStyle("-fx-text-fill: #b0b0b0; -fx-font-size: 14px;");
 
         VBox form = new VBox(8);
 
@@ -82,6 +85,18 @@ public class LoginController extends StackPane {
         emailField = new TextField();
         emailField.setPromptText("Email Address");
         emailField.setPrefHeight(35);
+
+        // --- Location field (register only) ---
+        locationLabel = new Label("Location");
+        locationLabel.setTextFill(Color.WHITE);
+        locationLabel.setVisible(false);
+        locationLabel.setManaged(false);
+
+        locationField = new TextField();
+        locationField.setPromptText("City / Country");
+        locationField.setPrefHeight(35);
+        locationField.setVisible(false);
+        locationField.setManaged(false);
 
         // --- Password field with show/hide toggle ---
         Label passwordLabel = new Label("Password");
@@ -159,9 +174,9 @@ public class LoginController extends StackPane {
         // --- Main action button ---
         mainBtn = new Button("Sign In");
         mainBtn.setMaxWidth(Double.MAX_VALUE);
-        mainBtn.setPrefHeight(38);
+        mainBtn.setPrefHeight(45);
         mainBtn.getStyleClass().add("button-primary");
-        mainBtn.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-cursor: hand;");
+        mainBtn.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-cursor: hand;");
 
         statusLabel = new Label();
         statusLabel.setWrapText(true);
@@ -182,13 +197,14 @@ public class LoginController extends StackPane {
 
         Button userDemo = new Button("User Demo");
         userDemo.setStyle("-fx-background-color: transparent; -fx-text-fill: #555; -fx-font-size: 11px;");
-        userDemo.setOnAction(e -> { emailField.setText("demo@example.com"); passwordField.setText("password123"); });
+        userDemo.setOnAction(e -> { emailField.setText("john@example.com"); passwordField.setText("password123"); });
 
         demoBox.getChildren().addAll(adminDemo, userDemo);
 
         form.getChildren().addAll(
             nameLabel, nameField,
             emailLabel, emailField,
+            locationLabel, locationField,
             passwordLabel, passwordBox,
             confirmLabel, confirmPasswordBox,
             mainBtn, statusLabel, toggleLink, demoBox
@@ -204,8 +220,8 @@ public class LoginController extends StackPane {
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 
-        scrollPane.setMaxWidth(380);
-        scrollPane.setMaxHeight(580);
+        scrollPane.setMaxWidth(450);
+        scrollPane.setMaxHeight(650);
 
         StackPane.setAlignment(scrollPane, Pos.CENTER);
         this.getChildren().add(scrollPane);
@@ -228,6 +244,10 @@ public class LoginController extends StackPane {
             confirmLabel.setManaged(true);
             confirmPasswordBox.setVisible(true);
             confirmPasswordBox.setManaged(true);
+            locationLabel.setVisible(true);
+            locationLabel.setManaged(true);
+            locationField.setVisible(true);
+            locationField.setManaged(true);
             demoBox.setVisible(false);
             demoBox.setManaged(false);
         } else {
@@ -243,18 +263,23 @@ public class LoginController extends StackPane {
             confirmLabel.setManaged(false);
             confirmPasswordBox.setVisible(false);
             confirmPasswordBox.setManaged(false);
+            locationLabel.setVisible(false);
+            locationLabel.setManaged(false);
+            locationField.setVisible(false);
+            locationField.setManaged(false);
             demoBox.setVisible(true);
             demoBox.setManaged(true);
         }
     }
 
     private void handleAction() {
-        String email = emailField.getText().trim();
+        String email = emailField.getText().trim().toLowerCase();
         String pass = passwordField.getText();
         statusLabel.setText("");
 
         if (isRegisterMode) {
             String name = nameField.getText().trim();
+            String location = locationField.getText().trim();
             String confirmPass = confirmPasswordField.getText();
 
             // Name validation
@@ -266,6 +291,10 @@ public class LoginController extends StackPane {
                 showError("Name must be at least 2 characters.");
                 return;
             }
+            if (!NAME_PATTERN.matcher(name).matches()) {
+                showError("Name can only contain letters and spaces (no numbers).");
+                return;
+            }
 
             // Email validation
             if (email.isEmpty()) {
@@ -274,6 +303,12 @@ public class LoginController extends StackPane {
             }
             if (!EMAIL_PATTERN.matcher(email).matches()) {
                 showError("Please enter a valid email address (e.g. user@example.com).");
+                return;
+            }
+
+            // Location validation
+            if (location.isEmpty()) {
+                showError("Please enter your location.");
                 return;
             }
 
@@ -298,7 +333,7 @@ public class LoginController extends StackPane {
             }
 
             try {
-                authService.register(name, email, pass, "CUSTOMER");
+                authService.register(name, email, pass, "CUSTOMER", location);
                 statusLabel.setText("Registration successful! You can now sign in.");
                 statusLabel.setTextFill(Color.web("#38b86c"));
                 toggleMode();
@@ -324,13 +359,12 @@ public class LoginController extends StackPane {
                 return;
             }
             try {
-                if (authService.login(email, pass)) {
-                    onLoginSuccess.run();
-                } else {
-                    showError("Invalid email or password.");
-                }
+                authService.login(email, pass);
+                onLoginSuccess.run();
             } catch (SQLException ex) {
                 showError("Database error: " + ex.getMessage());
+            } catch (IllegalArgumentException ex) {
+                showError(ex.getMessage());
             }
         }
     }

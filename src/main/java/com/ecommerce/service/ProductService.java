@@ -94,6 +94,18 @@ public class ProductService {
             case "Price (High to Low)":
                 Collections.sort(products, Comparator.comparing(Product::getPrice).reversed());
                 break;
+            case "ID (Oldest First)":
+                Collections.sort(products, Comparator.comparing(Product::getProductId));
+                break;
+            case "ID (Newest First)":
+                Collections.sort(products, Comparator.comparing(Product::getProductId).reversed());
+                break;
+            case "Stock (Low to High)":
+                Collections.sort(products, Comparator.comparing(Product::getStockQuantity));
+                break;
+            case "Stock (High to Low)":
+                Collections.sort(products, Comparator.comparing(Product::getStockQuantity).reversed());
+                break;
         }
     }
 }

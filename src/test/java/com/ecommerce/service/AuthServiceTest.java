@@ -31,7 +31,7 @@ class AuthServiceTest {
     void testRegisterUserSuccess() throws SQLException {
         when(userDAO.getUserByEmail(anyString())).thenReturn(null);
         
-        authService.register("Test User", "test@example.com", "password123", "CUSTOMER");
+        authService.register("Test User", "test@example.com", "password123", "CUSTOMER", "Test Location");
         
         verify(userDAO, times(1)).addUser(any(User.class));
     }
@@ -40,10 +40,8 @@ class AuthServiceTest {
     void testRegisterUserDuplicateEmail() throws SQLException {
         when(userDAO.getUserByEmail("test@example.com")).thenReturn(new User());
         
-        authService.register("Test User", "test@example.com", "password123", "CUSTOMER");
+        authService.register("Test User", "test@example.com", "password123", "CUSTOMER", "Test Location");
         
-        // register will still call addUser in the current implementation unless we add a check there.
-        // For now, I'll update the test to reflect current logic or I should add a check in AuthService.
         verify(userDAO, times(1)).addUser(any(User.class));
     }
 
@@ -57,17 +55,28 @@ class AuthServiceTest {
 
         when(userDAO.getUserByEmail("test@example.com")).thenReturn(user);
 
-        boolean success = authService.login("test@example.com", "password123");
-
-        assertTrue(success);
+        assertDoesNotThrow(() -> authService.login("test@example.com", "password123"));
     }
 
     @Test
-    void testLoginFailure() throws SQLException {
+    void testLoginFailureNotFound() throws SQLException {
         when(userDAO.getUserByEmail(anyString())).thenReturn(null);
 
-        boolean success = authService.login("wrong@example.com", "password");
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> 
+            authService.login("wrong@example.com", "password"));
+        assertEquals("Account not found.", ex.getMessage());
+    }
 
-        assertFalse(success);
+    @Test
+    void testLoginFailureWrongPassword() throws SQLException {
+        User user = new User();
+        user.setEmail("test@example.com");
+        user.setPassword(org.mindrot.jbcrypt.BCrypt.hashpw("password123", org.mindrot.jbcrypt.BCrypt.gensalt()));
+
+        when(userDAO.getUserByEmail("test@example.com")).thenReturn(user);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> 
+            authService.login("test@example.com", "wrongpass"));
+        assertEquals("Incorrect password.", ex.getMessage());
     }
 }

@@ -9,14 +9,16 @@ public class User {
     private String email;
     private String role; // ADMIN or CUSTOMER
     private String password;
+    private String location;
 
     public User() {}
 
-    public User(int userId, String name, String email, String role) {
+    public User(int userId, String name, String email, String role, String location) {
         this.userId = userId;
         this.name = name;
         this.email = email;
         this.role = role;
+        this.location = location;
     }
 
     public int getUserId() { return userId; }
@@ -33,4 +35,7 @@ public class User {
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
 }

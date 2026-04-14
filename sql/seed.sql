@@ -9,9 +9,12 @@ INSERT INTO Categories (name, description) VALUES
 -- Users (Admin and Customer demo users)
 -- admin123 -> $2a$10$tzwCuVUnlkYOz3ECsng5l.PvkQ2UYl89.yz8oh/iTP0.5iCUT.kya
 -- password123 -> $2a$10$IsAwUAs2zQzbYLBPTaAwmeikub506iFXRjG2V2NFILUMy48b4NMme
-INSERT INTO Users (user_id, name, email, password_hash, role) VALUES
-(1, 'Demo Customer', 'demo@example.com', '$2a$10$IsAwUAs2zQzbYLBPTaAwmeikub506iFXRjG2V2NFILUMy48b4NMme', 'CUSTOMER'),
-(2, 'Admin User', 'admin@ecommerce.com', '$2a$10$tzwCuVUnlkYOz3ECsng5l.PvkQ2UYl89.yz8oh/iTP0.5iCUT.kya', 'ADMIN');
+INSERT INTO Users (user_id, name, email, password_hash, role, location) VALUES
+(1, 'John Doe', 'john@example.com', '$2a$10$IsAwUAs2zQzbYLBPTaAwmeikub506iFXRjG2V2NFILUMy48b4NMme', 'CUSTOMER', 'Accra, Ghana'),
+(2, 'Jane Smith', 'jane@example.com', '$2a$10$IsAwUAs2zQzbYLBPTaAwmeikub506iFXRjG2V2NFILUMy48b4NMme', 'CUSTOMER', 'Nairobi, Kenya'),
+(3, 'Michael Obi', 'michael@example.com', '$2a$10$IsAwUAs2zQzbYLBPTaAwmeikub506iFXRjG2V2NFILUMy48b4NMme', 'CUSTOMER', 'Lagos, Nigeria'),
+(4, 'Sarah Müller', 'sarah@example.com', '$2a$10$IsAwUAs2zQzbYLBPTaAwmeikub506iFXRjG2V2NFILUMy48b4NMme', 'CUSTOMER', 'Berlin, Germany'),
+(100, 'System Admin', 'admin@ecommerce.com', '$2a$10$tzwCuVUnlkYOz3ECsng5l.PvkQ2UYl89.yz8oh/iTP0.5iCUT.kya', 'ADMIN', NULL);
 
 -- Products (5+ required)
 INSERT INTO Products (name, description, price, category_id) VALUES

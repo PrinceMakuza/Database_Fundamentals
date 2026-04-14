@@ -9,6 +9,7 @@ public class UserContext {
     private static String currentUserName;
     private static String currentUserEmail;
     private static String currentUserRole;
+    private static String currentUserLocation;
 
     public static int getCurrentUserId() { return currentUserId; }
     public static void setCurrentUserId(int userId) { currentUserId = userId; }
@@ -22,6 +23,9 @@ public class UserContext {
     public static String getCurrentUserRole() { return currentUserRole; }
     public static void setCurrentUserRole(String role) { currentUserRole = role; }
 
+    public static String getCurrentUserLocation() { return currentUserLocation; }
+    public static void setCurrentUserLocation(String location) { currentUserLocation = location; }
+
     public static boolean isAdmin() { return "ADMIN".equalsIgnoreCase(currentUserRole); }
     public static boolean isLoggedIn() { return currentUserId != -1; }
 
@@ -30,5 +34,6 @@ public class UserContext {
         currentUserName = null;
         currentUserEmail = null;
         currentUserRole = null;
+        currentUserLocation = null;
     }
 }

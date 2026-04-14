@@ -24,7 +24,8 @@ public class UserDAO {
                     rs.getInt("user_id"),
                     rs.getString("name"),
                     rs.getString("email"),
-                    rs.getString("role")
+                    rs.getString("role"),
+                    rs.getString("location")
                 ));
             }
         }
@@ -57,7 +58,8 @@ public class UserDAO {
                         rs.getInt("user_id"),
                         rs.getString("name"),
                         rs.getString("email"),
-                        rs.getString("role")
+                        rs.getString("role"),
+                        rs.getString("location")
                     );
                     user.setPassword(rs.getString("password_hash"));
                     return user;
@@ -71,13 +73,14 @@ public class UserDAO {
      * Adds a new user to the database.
      */
     public void addUser(User user) throws SQLException {
-        String sql = "INSERT INTO Users (name, email, password_hash, role) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO Users (name, email, password_hash, role, location) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, user.getName());
-            pstmt.setString(2, user.getEmail());
+            pstmt.setString(2, user.getEmail().toLowerCase());
             pstmt.setString(3, user.getPassword());
             pstmt.setString(4, user.getRole());
+            pstmt.setString(5, user.getLocation());
             pstmt.executeUpdate();
         }
     }
@@ -86,13 +89,34 @@ public class UserDAO {
      * Updates an existing user's information.
      */
     public void updateUser(User user) throws SQLException {
-        String sql = "UPDATE Users SET name = ?, email = ?, role = ? WHERE user_id = ?";
+        String sql = "UPDATE Users SET name = ?, email = ?, role = ?, location = ? WHERE user_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, user.getName());
-            pstmt.setString(2, user.getEmail());
+            pstmt.setString(2, user.getEmail().toLowerCase());
             pstmt.setString(3, user.getRole());
-            pstmt.setInt(4, user.getUserId());
+            pstmt.setString(4, user.getLocation());
+            pstmt.setInt(5, user.getUserId());
+            pstmt.executeUpdate();
+        }
+    }
+
+    /**
+     * Updates user profile including password if not null.
+     */
+    public void updateUserProfile(int userId, String name, String email, String location, String passwordHash) throws SQLException {
+        StringBuilder sql = new StringBuilder("UPDATE Users SET name = ?, email = ?, location = ?");
+        if (passwordHash != null) sql.append(", password_hash = ?");
+        sql.append(" WHERE user_id = ?");
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+            int idx = 1;
+            pstmt.setString(idx++, name);
+            pstmt.setString(idx++, email.toLowerCase());
+            pstmt.setString(idx++, location);
+            if (passwordHash != null) pstmt.setString(idx++, passwordHash);
+            pstmt.setInt(idx, userId);
             pstmt.executeUpdate();
         }
     }
@@ -104,14 +128,15 @@ public class UserDAO {
         String sql = "SELECT * FROM Users WHERE email = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, email);
+            pstmt.setString(1, email.toLowerCase());
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     User user = new User(
                         rs.getInt("user_id"),
                         rs.getString("name"),
                         rs.getString("email"),
-                        rs.getString("role")
+                        rs.getString("role"),
+                        rs.getString("location")
                     );
                     user.setPassword(rs.getString("password_hash"));
                     return user;
