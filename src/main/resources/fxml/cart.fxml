@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox spacing="20.0" styleClass="main-content" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.ecommerce.controller.CartController">
+    <padding>
+        <Insets bottom="30.0" left="30.0" right="30.0" top="30.0" />
+    </padding>
+
+    <!-- Header -->
+    <Label styleClass="content-title" text="🛒  Your Shopping Cart" />
+
+    <!-- Search & Sort Bar -->
+    <HBox alignment="CENTER_LEFT" spacing="15.0">
+        <padding>
+            <Insets bottom="10.0" />
+        </padding>
+        <TextField fx:id="searchField" onKeyReleased="#filterAndDisplay" prefWidth="250.0" promptText="🔍 Search items in cart..." />
+        <ComboBox fx:id="sortCombo" onAction="#filterAndDisplay" prefWidth="180.0" promptText="Sort By" />
+    </HBox>
+
+    <!-- Items Container -->
+    <ScrollPane fitToWidth="true" style="-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;" VBox.vgrow="ALWAYS">
+        <VBox fx:id="itemsContainer" spacing="15.0" />
+    </ScrollPane>
+
+    <!-- Footer / Summary -->
+    <HBox alignment="CENTER_RIGHT" spacing="20.0">
+        <padding>
+            <Insets top="20.0" />
+        </padding>
+        <Label fx:id="totalLabel" styleClass="label-bright" text="Total: $0.00">
+            <font>
+                <Font name="System Bold" size="22.0" />
+            </font>
+        </Label>
+        <Button onAction="#handleCheckout" style="-fx-padding: 12 30; -fx-font-size: 16px;" styleClass="button-success" text="Checkout Now" />
+    </HBox>
+</VBox>

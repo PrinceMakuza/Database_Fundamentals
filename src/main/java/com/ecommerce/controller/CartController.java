@@ -3,92 +3,50 @@ package com.ecommerce.controller;
 import com.ecommerce.model.CartItem;
 import com.ecommerce.service.CartService;
 import com.ecommerce.util.UserContext;
+import javafx.collections.FXCollections;
+import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.collections.FXCollections;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * CartController manages the shopping cart UI and user interactions.
- * Fully integrated with UserContext for real-world e-commerce logic.
+ * CartController handles shopping cart interactions and layout.
+ * Refactored for FXML compatibility and clean orchestration.
  */
-public class CartController extends VBox {
-    private final CartService cartService;
-    private final VBox itemsContainer;
-    private final Label totalLabel;
-    private final TextField searchField;
-    private final ComboBox<String> sortCombo;
+public class CartController {
+    private final CartService cartService = new CartService();
+    
+    @FXML private VBox itemsContainer;
+    @FXML private Label totalLabel;
+    @FXML private TextField searchField;
+    @FXML private ComboBox<String> sortCombo;
+    
     private List<CartItem> allItems;
 
-    public CartController() {
-        this.cartService = new CartService();
-        this.setSpacing(20);
-        this.setPadding(new Insets(30));
-        this.getStyleClass().add("main-content");
-
-        // Header
-        Label title = new Label("🛒  Your Shopping Cart");
-        title.getStyleClass().add("content-title");
-
-        // Search & Sort Bar
-        HBox actionBar = new HBox(15);
-        actionBar.setAlignment(Pos.CENTER_LEFT);
-        actionBar.setPadding(new Insets(0, 0, 10, 0));
-
-        searchField = new TextField();
-        searchField.setPromptText("🔍 Search items in cart...");
-        searchField.setPrefWidth(250);
-        searchField.textProperty().addListener((o, ov, nv) -> filterAndDisplay());
-
-        sortCombo = new ComboBox<>(FXCollections.observableArrayList("Name (A-Z)", "Price (Low to High)", "Price (High to Low)"));
-        sortCombo.setPromptText("Sort By");
-        sortCombo.setPrefWidth(180);
-        sortCombo.setOnAction(e -> filterAndDisplay());
-
-        actionBar.getChildren().addAll(searchField, sortCombo);
-
-        itemsContainer = new VBox(15);
-        ScrollPane scrollPane = new ScrollPane(itemsContainer);
-        scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
-        VBox.setVgrow(scrollPane, Priority.ALWAYS);
-
-        // Footer / Summary
-        HBox footer = new HBox(20);
-        footer.setAlignment(Pos.CENTER_RIGHT);
-        footer.setPadding(new Insets(20, 0, 0, 0));
-
-        totalLabel = new Label("Total: $0.00");
-        totalLabel.getStyleClass().add("label-bright");
-        totalLabel.setFont(Font.font("System", FontWeight.BOLD, 22));
-
-        Button checkoutBtn = new Button("Checkout Now");
-        checkoutBtn.getStyleClass().add("button-success");
-        checkoutBtn.setStyle("-fx-padding: 12 30; -fx-font-size: 16px;");
-        checkoutBtn.setOnAction(e -> handleCheckout());
-
-        footer.getChildren().addAll(totalLabel, checkoutBtn);
-
-        this.getChildren().addAll(title, actionBar, scrollPane, footer);
-        
+    @FXML
+    public void initialize() {
+        if (sortCombo != null) {
+            sortCombo.setItems(FXCollections.observableArrayList("Name (A-Z)", "Price (Low to High)", "Price (High to Low)"));
+        }
         loadCart();
     }
 
     public void loadCart() {
         try {
-            int currentUserId = UserContext.getCurrentUserId();
-            allItems = cartService.getCartItems(currentUserId);
+            allItems = cartService.getCartItems(UserContext.getCurrentUserId());
             filterAndDisplay();
         } catch (SQLException e) {
-            showError("Failed to load cart: " + e.getMessage());
+            showError("Load Error", e.getMessage());
         }
     }
 
+    @FXML
     private void filterAndDisplay() {
         itemsContainer.getChildren().clear();
         if (allItems == null) return;
@@ -96,7 +54,7 @@ public class CartController extends VBox {
         String search = searchField.getText().toLowerCase();
         List<CartItem> filtered = allItems.stream()
             .filter(i -> i.getProductName().toLowerCase().contains(search))
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
 
         String sort = sortCombo.getValue();
         if (sort != null) {
@@ -156,7 +114,7 @@ public class CartController extends VBox {
                 cartService.removeFromCart(item.getCartItemId());
                 loadCart();
             } catch (SQLException ex) {
-                showError(ex.getMessage());
+                showError("Remove Error", ex.getMessage());
             }
         });
 
@@ -168,38 +126,40 @@ public class CartController extends VBox {
         try {
             int qty = Integer.parseInt(qtyStr);
             if (qty <= 0) {
-                showError("Quantity must be greater than zero.");
+                showError("Validation", "Quantity must be greater than zero.");
                 return;
             }
             cartService.updateQuantity(itemId, qty);
             loadCart();
         } catch (NumberFormatException | SQLException e) {
-            showError("Invalid quantity or update failed.");
+            showError("Update Error", "Invalid quantity or update failed.");
         }
     }
 
+    @FXML
     private void handleCheckout() {
         try {
-            int userId = UserContext.getCurrentUserId();
-            boolean success = cartService.checkout(userId);
-            if (success) {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Order placed successfully! Check your Order History.", ButtonType.OK);
-                alert.setTitle("Success");
-                alert.setHeaderText(null);
-                alert.showAndWait();
+            if (cartService.checkout(UserContext.getCurrentUserId())) {
+                showInfo("Success", "Order placed successfully! Check your Order History.");
                 loadCart();
             } else {
-                showError("Your cart is empty.");
+                showError("Checkout", "Your cart is empty.");
             }
         } catch (SQLException e) {
-            showError("Checkout failed: " + e.getMessage());
+            showError("Checkout Error", e.getMessage());
         }
     }
 
-    private void showError(String msg) {
-        Alert alert = new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK);
-        alert.setTitle("Error");
-        alert.setHeaderText(null);
-        alert.showAndWait();
+    private void showInfo(String title, String msg) {
+        Alert a = new Alert(Alert.AlertType.INFORMATION, msg);
+        a.setTitle(title);
+        a.setHeaderText(null);
+        a.show();
+    }
+
+    private void showError(String title, String msg) {
+        Alert a = new Alert(Alert.AlertType.ERROR, msg);
+        a.setTitle(title);
+        a.show();
     }
 }

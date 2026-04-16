@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.ecommerce.controller.DashboardController">
+    <!-- Top Bar -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="20.0" style="-fx-background-color: #121212; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 10, 0, 0, 5);">
+            <padding>
+                <Insets bottom="15.0" left="30.0" right="30.0" top="15.0" />
+            </padding>
+            
+            <Label text="🚀  Smart E-Commerce" style="-fx-font-size: 20px;" styleClass="content-title" />
+            
+            <Region HBox.hgrow="ALWAYS" />
+            
+            <VBox alignment="CENTER_RIGHT" spacing="2.0">
+                <Label fx:id="userNameLabel" text="User Name" style="-fx-text-fill: white; -fx-font-weight: bold;" />
+                <Label fx:id="userRoleLabel" text="User Role" style="-fx-text-fill: #3498db; -fx-font-size: 10px;" />
+            </VBox>
+            
+            <Button fx:id="logoutBtn" text="Logout" onAction="#handleLogout" style="-fx-font-size: 12px; -fx-padding: 5 15;" styleClass="button-danger" />
+        </HBox>
+    </top>
+    
+    <!-- Central Content Area -->
+    <center>
+        <ScrollPane fitToHeight="true" fitToWidth="true" hbarPolicy="NEVER" styleClass="content-scroll-pane">
+            <StackPane fx:id="contentHolder" styleClass="main-content" />
+        </ScrollPane>
+    </center>
+</BorderPane>

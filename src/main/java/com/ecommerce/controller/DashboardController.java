@@ -1,100 +1,94 @@
 package com.ecommerce.controller;
 
 import com.ecommerce.util.UserContext;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import java.io.IOException;
 
 /**
- * DashboardController is the main shell after login.
- * Manages view switching and ensures data (like the Cart) is refreshed on navigation.
+ * DashboardController acts as the main orchestrator for the application's logged-in views.
+ * Updated to use standard FXML loading for sub-modules.
  */
-public class DashboardController extends BorderPane {
+public class DashboardController {
 
-    private CartController cartController;
+    @FXML private Label userNameLabel;
+    @FXML private Label userRoleLabel;
+    @FXML private StackPane contentHolder;
+    
+    private Runnable onLogout;
 
-    public DashboardController(Runnable onLogout) {
-        // Base styling handled by CSS
+    public void setOnLogout(Runnable onLogout) {
+        this.onLogout = onLogout;
+    }
 
-        // Top Bar
-        HBox topBar = new HBox(20);
-        topBar.setPadding(new Insets(15, 30, 15, 30));
-        topBar.setAlignment(Pos.CENTER_LEFT);
-        topBar.setStyle("-fx-background-color: #121212; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 10, 0, 0, 5);");
+    @FXML
+    public void initialize() {
+        userNameLabel.setText(UserContext.getCurrentUserName());
+        userRoleLabel.setText(UserContext.getCurrentUserRole());
+        
+        loadRoleSpecificView();
+    }
 
-        Label logo = new Label("🚀  Smart E-Commerce");
-        logo.getStyleClass().add("content-title");
-        logo.setStyle("-fx-font-size: 20px;");
+    private void loadRoleSpecificView() {
+        contentHolder.getChildren().clear();
+        
+        try {
+            if (UserContext.isAdmin()) {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/admin.fxml"));
+                contentHolder.getChildren().add(loader.load());
+            } else if (UserContext.isCustomer()) {
+                setupCustomerTabs();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            contentHolder.getChildren().add(new Label("Error loading view: " + e.getMessage()));
+        }
+    }
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
+    private void setupCustomerTabs() throws IOException {
+        TabPane tabPane = new TabPane();
+        
+        // Tab 1: Products
+        FXMLLoader prodLoader = new FXMLLoader(getClass().getResource("/fxml/products.fxml"));
+        Tab browseTab = new Tab("📦  Browse Products", prodLoader.load());
+        browseTab.setClosable(false);
+        
+        // Tab 2: Cart
+        FXMLLoader cartLoader = new FXMLLoader(getClass().getResource("/fxml/cart.fxml"));
+        Tab cartTab = new Tab("🛒  My Cart", cartLoader.load());
+        CartController cartController = cartLoader.getController();
+        cartTab.setClosable(false);
+        
+        // Tab 3: History
+        FXMLLoader historyLoader = new FXMLLoader(getClass().getResource("/fxml/orders.fxml"));
+        Tab historyTab = new Tab("📜  Order History", historyLoader.load());
+        OrderHistoryController historyController = historyLoader.getController();
+        historyTab.setClosable(false);
 
-        VBox userProfile = new VBox(2);
-        userProfile.setAlignment(Pos.CENTER_RIGHT);
-        Label userName = new Label(UserContext.getCurrentUserName());
-        userName.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
-        Label userRole = new Label(UserContext.getCurrentUserRole());
-        userRole.setStyle("-fx-text-fill: #3498db; -fx-font-size: 10px;");
-        userProfile.getChildren().addAll(userName, userRole);
+        // Tab 4: Profile
+        FXMLLoader profileLoader = new FXMLLoader(getClass().getResource("/fxml/profile.fxml"));
+        Tab profileTab = new Tab("👤  Profile", profileLoader.load());
+        profileTab.setClosable(false);
 
-        Button logoutBtn = new Button("Logout");
-        logoutBtn.getStyleClass().add("button-danger");
-        logoutBtn.setStyle("-fx-font-size: 12px; -fx-padding: 5 15;");
-        logoutBtn.setOnAction(e -> {
-            UserContext.clear();
-            onLogout.run();
+        tabPane.getTabs().addAll(browseTab, cartTab, historyTab, profileTab);
+
+        tabPane.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
+            if (newTab == cartTab) {
+                cartController.loadCart();
+            } else if (newTab == historyTab) {
+                historyController.loadOrders();
+            }
         });
 
-        topBar.getChildren().addAll(logo, spacer, userProfile, logoutBtn);
-        this.setTop(topBar);
+        contentHolder.getChildren().add(tabPane);
+    }
 
-        // Content Area
-        StackPane contentHolder = new StackPane();
-        contentHolder.getStyleClass().add("main-content");
-        
-        if (UserContext.isAdmin()) {
-            contentHolder.getChildren().add(new AdminController());
-        } else {
-            TabPane userTabs = new TabPane();
-            
-            ProductController productController = new ProductController();
-            cartController = new CartController();
-            OrderHistoryController orderHistoryController = new OrderHistoryController();
-
-            Tab browseTab = new Tab("📦  Browse Products", productController);
-            browseTab.setClosable(false);
-            
-            Tab cartTab = new Tab("🛒  My Cart", cartController);
-            cartTab.setClosable(false);
-            
-            Tab historyTab = new Tab("📜  Order History", orderHistoryController);
-            historyTab.setClosable(false);
-
-            Tab profileTab = new Tab("👤  Profile", new ProfileController());
-            profileTab.setClosable(false);
-
-            userTabs.getTabs().addAll(browseTab, cartTab, historyTab, profileTab);
-
-            // AUTO-REFRESH LOGIC: Refresh cart or history when their tabs are selected
-            userTabs.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
-                if (newTab == cartTab) {
-                    cartController.loadCart();
-                } else if (newTab == historyTab) {
-                    orderHistoryController.loadOrders();
-                }
-            });
-
-            contentHolder.getChildren().add(userTabs);
-        }
-
-        // We wrap everything in a ScrollPane for safety, though children often have their own ScrollPanes
-        ScrollPane scrollPane = new ScrollPane(contentHolder);
-        scrollPane.setFitToWidth(true);
-        scrollPane.setFitToHeight(true);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scrollPane.getStyleClass().add("content-scroll-pane");
-        
-        this.setCenter(scrollPane);
+    @FXML
+    private void handleLogout() {
+        UserContext.clear();
+        if (onLogout != null) onLogout.run();
     }
 }

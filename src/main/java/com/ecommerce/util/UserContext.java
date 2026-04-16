@@ -27,6 +27,7 @@ public class UserContext {
     public static void setCurrentUserLocation(String location) { currentUserLocation = location; }
 
     public static boolean isAdmin() { return "ADMIN".equalsIgnoreCase(currentUserRole); }
+    public static boolean isCustomer() { return "CUSTOMER".equalsIgnoreCase(currentUserRole); }
     public static boolean isLoggedIn() { return currentUserId != -1; }
 
     public static void clear() {

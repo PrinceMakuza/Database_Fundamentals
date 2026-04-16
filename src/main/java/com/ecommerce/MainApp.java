@@ -4,13 +4,16 @@ import com.ecommerce.controller.LoginController;
 import com.ecommerce.controller.DashboardController;
 import com.ecommerce.dao.DatabaseConnection;
 import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+
+import java.io.IOException;
 
 /**
  * MainApp is the entry point for the Smart E-Commerce System.
- * Refactored to maintain window state and size across views.
+ * Refactored to use FXML for a professional separation of concerns.
  */
 public class MainApp extends Application {
 
@@ -22,13 +25,8 @@ public class MainApp extends Application {
         this.primaryStage = primaryStage;
         primaryStage.setTitle("Smart E-Commerce System");
 
-        // Initialize with a standard, compact size
-        mainScene = new Scene(new StackPane(), 1050, 700);
-        applyStyles(mainScene);
-        
         showLogin();
 
-        primaryStage.setScene(mainScene);
         primaryStage.setMinWidth(900);
         primaryStage.setMinHeight(600);
         primaryStage.centerOnScreen();
@@ -36,13 +34,37 @@ public class MainApp extends Application {
     }
 
     private void showLogin() {
-        LoginController loginView = new LoginController(this::showDashboard);
-        mainScene.setRoot(loginView);
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/login.fxml"));
+            Parent root = loader.load();
+            
+            LoginController controller = loader.getController();
+            controller.setOnLoginSuccess(this::showDashboard);
+            
+            if (mainScene == null) {
+                mainScene = new Scene(root, 1050, 700);
+                applyStyles(mainScene);
+                primaryStage.setScene(mainScene);
+            } else {
+                mainScene.setRoot(root);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void showDashboard() {
-        DashboardController dashboard = new DashboardController(this::showLogin);
-        mainScene.setRoot(dashboard);
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dashboard.fxml"));
+            Parent root = loader.load();
+            
+            DashboardController controller = loader.getController();
+            controller.setOnLogout(this::showLogin);
+            
+            mainScene.setRoot(root);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void applyStyles(Scene scene) {

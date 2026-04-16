@@ -73,7 +73,8 @@ public class UserDAO {
      * Adds a new user to the database.
      */
     public void addUser(User user) throws SQLException {
-        String sql = "INSERT INTO Users (name, email, password_hash, role, location) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO Users (user_id, name, email, password_hash, role, location) " +
+                     "VALUES ((SELECT COALESCE(MAX(user_id), 0) + 1 FROM Users), ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, user.getName());

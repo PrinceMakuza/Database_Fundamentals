@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="20.0" styleClass="main-content" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.ecommerce.controller.AdminController">
+    <!-- Header -->
+    <VBox spacing="5.0">
+        <Label styleClass="content-title, label-bright" text="⚙  System Administration" style="-fx-font-size: 26px; -fx-font-weight: bold;" />
+        <Label styleClass="label-bright" text="Full control over products, customers, and system monitoring" />
+    </VBox>
+
+    <!-- Navigation Bar -->
+    <HBox fx:id="toggleBar" alignment="CENTER_LEFT" spacing="10.0">
+        <padding>
+            <Insets bottom="10.0" />
+        </padding>
+        <Button fx:id="prodBtn" onAction="#showProducts" styleClass="button-primary" text="📦 Products" />
+        <Button fx:id="catBtn" onAction="#showCategories" text="📂 Categories" />
+        <Button fx:id="userBtn" onAction="#showUsers" text="👥 Users" />
+        <Button fx:id="orderBtn" onAction="#showOrders" text="📜 Orders" />
+        <Button fx:id="invBtn" onAction="#showInventory" text="🏭 Inventory" />
+        <Button fx:id="reviewBtn" onAction="#showReviews" text="⭐ Reviews" />
+        <Button fx:id="reportBtn" onAction="#showReports" text="📊 Reports" />
+    </HBox>
+
+    <!-- Content Pane -->
+    <ScrollPane fitToHeight="true" fitToWidth="true" hbarPolicy="NEVER" style="-fx-background-color: transparent; -fx-background: transparent; -fx-padding: 0;" VBox.vgrow="ALWAYS">
+        <StackPane fx:id="contentPane" />
+    </ScrollPane>
+</VBox>

@@ -4,6 +4,8 @@ import com.ecommerce.model.Order;
 import com.ecommerce.model.OrderItem;
 import com.ecommerce.service.OrderService;
 import com.ecommerce.util.UserContext;
+import javafx.collections.FXCollections;
+import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -11,58 +13,30 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
-import javafx.collections.FXCollections;
 import java.sql.SQLException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * OrderHistoryController displays a user's past orders.
+ * OrderHistoryController handles the display and filtering of past orders.
+ * Refactored for FXML compatibility and clean orchestration.
  */
-public class OrderHistoryController extends VBox {
-    private final OrderService orderService;
-    private final VBox ordersContainer;
-    private final TextField searchField;
-    private final ComboBox<String> sortCombo;
+public class OrderHistoryController {
+    private final OrderService orderService = new OrderService();
+    
+    @FXML private VBox ordersContainer;
+    @FXML private TextField searchField;
+    @FXML private ComboBox<String> sortCombo;
+    
     private List<Order> allOrders;
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm");
 
-    public OrderHistoryController() {
-        this.orderService = new OrderService();
-        this.setSpacing(20);
-        this.setPadding(new Insets(30));
-        this.setStyle("-fx-background-color: #1e1e2f;");
-
-        // Header
-        Label title = new Label("📜  Order History");
-        title.setFont(Font.font("System", FontWeight.BOLD, 24));
-        title.setTextFill(Color.WHITE);
-
-        // Search & Sort Bar
-        HBox bar = new HBox(15);
-        bar.setAlignment(Pos.CENTER_LEFT);
-        bar.setPadding(new Insets(10, 0, 10, 0));
-
-        searchField = new TextField();
-        searchField.setPromptText("🔍 Search by Order ID...");
-        searchField.setPrefWidth(220);
-        searchField.textProperty().addListener((o, ov, nv) -> filterAndDisplay());
-
-        sortCombo = new ComboBox<>(FXCollections.observableArrayList("Date (Newest)", "Date (Oldest)", "Amount (High)", "Amount (Low)"));
-        sortCombo.setPromptText("Sort By");
-        sortCombo.setPrefWidth(180);
-        sortCombo.setOnAction(e -> filterAndDisplay());
-
-        bar.getChildren().addAll(searchField, sortCombo);
-
-        ordersContainer = new VBox(15);
-        ScrollPane scrollPane = new ScrollPane(ordersContainer);
-        scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent; -fx-border-color: transparent;");
-        VBox.setVgrow(scrollPane, Priority.ALWAYS);
-
-        this.getChildren().addAll(title, bar, scrollPane);
-        
+    @FXML
+    public void initialize() {
+        if (sortCombo != null) {
+            sortCombo.setItems(FXCollections.observableArrayList("Date (Newest)", "Date (Oldest)", "Amount (High)", "Amount (Low)"));
+        }
         loadOrders();
     }
 
@@ -71,10 +45,11 @@ public class OrderHistoryController extends VBox {
             allOrders = orderService.getUserOrderHistory(UserContext.getCurrentUserId());
             filterAndDisplay();
         } catch (SQLException e) {
-            showError("Failed to load orders: " + e.getMessage());
+            showError("Load Error", e.getMessage());
         }
     }
 
+    @FXML
     private void filterAndDisplay() {
         ordersContainer.getChildren().clear();
         if (allOrders == null) return;
@@ -82,7 +57,7 @@ public class OrderHistoryController extends VBox {
         String search = searchField.getText().trim();
         List<Order> filtered = allOrders.stream()
             .filter(o -> search.isEmpty() || String.valueOf(o.getOrderId()).contains(search))
-            .collect(java.util.stream.Collectors.toList());
+            .collect(Collectors.toList());
 
         String sort = sortCombo.getValue();
         if (sort != null) {
@@ -177,8 +152,10 @@ public class OrderHistoryController extends VBox {
         }
     }
 
-    private void showError(String msg) {
+    private void showError(String title, String msg) {
         Alert alert = new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK);
-        alert.showAndWait();
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.show();
     }
 }

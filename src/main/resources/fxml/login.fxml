@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Text?>
+
+<StackPane fx:id="rootPane" style="-fx-background-color: #121212;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.ecommerce.controller.LoginController">
+    <padding>
+        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+    </padding>
+    
+    <ScrollPane fx:id="scrollPane" fitToWidth="true" maxWidth="450.0" maxHeight="650.0" style="-fx-background-color: transparent; -fx-background: transparent; -fx-padding: 0;" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED">
+        <VBox fx:id="loginCard" alignment="CENTER_LEFT" spacing="18.0" maxWidth="420.0" style="-fx-background-color: #1e1e1e; -fx-background-radius: 15; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 18, 0, 0, 10);">
+            <padding>
+                <Insets bottom="35.0" left="35.0" right="35.0" top="35.0" />
+            </padding>
+            
+            <Label fx:id="title" text="Welcome Back" style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: white;" />
+            <Label fx:id="subtitle" text="Please sign in to continue" style="-fx-text-fill: #b0b0b0; -fx-font-size: 14px;" />
+            
+            <VBox fx:id="form" spacing="8.0">
+                <!-- Name Field (Register Mode) -->
+                <Label fx:id="nameLabel" text="Name" textFill="WHITE" visible="false" managed="false" />
+                <TextField fx:id="nameField" promptText="Full Name" prefHeight="35.0" visible="false" managed="false" />
+                
+                <!-- Email Field -->
+                <Label text="Email" textFill="WHITE" />
+                <TextField fx:id="emailField" promptText="Email Address" prefHeight="35.0" />
+                
+                <!-- Location Field (Register Mode) -->
+                <Label fx:id="locationLabel" text="Location" textFill="WHITE" visible="false" managed="false" />
+                <TextField fx:id="locationField" promptText="City / Country" prefHeight="35.0" visible="false" managed="false" />
+                
+                <!-- Password Field -->
+                <Label text="Password" textFill="WHITE" />
+                <HBox spacing="5.0" alignment="CENTER_LEFT">
+                    <StackPane HBox.hgrow="ALWAYS">
+                        <PasswordField fx:id="passwordField" promptText="Password" prefHeight="35.0" />
+                        <TextField fx:id="passwordVisible" promptText="Password" prefHeight="35.0" visible="false" managed="false" />
+                    </StackPane>
+                    <Button fx:id="togglePasswordBtn" text="◎" prefHeight="35.0" prefWidth="38.0" onAction="#togglePasswordVisibility" style="-fx-background-color: #2a2a2a; -fx-text-fill: #aaa; -fx-font-size: 14px; -fx-cursor: hand; -fx-border-color: #444; -fx-border-radius: 5; -fx-background-radius: 5;" />
+                </HBox>
+                
+                <!-- Confirm Password Field (Register Mode) -->
+                <Label fx:id="confirmLabel" text="Confirm Password" textFill="WHITE" visible="false" managed="false" />
+                <HBox fx:id="confirmPasswordBox" spacing="5.0" alignment="CENTER_LEFT" visible="false" managed="false">
+                    <StackPane HBox.hgrow="ALWAYS">
+                        <PasswordField fx:id="confirmPasswordField" promptText="Confirm Password" prefHeight="35.0" />
+                        <TextField fx:id="confirmPasswordVisible" promptText="Confirm Password" prefHeight="35.0" visible="false" managed="false" />
+                    </StackPane>
+                    <Button fx:id="toggleConfirmBtn" text="◎" prefHeight="35.0" prefWidth="38.0" onAction="#toggleConfirmVisibility" style="-fx-background-color: #2a2a2a; -fx-text-fill: #aaa; -fx-font-size: 14px; -fx-cursor: hand; -fx-border-color: #444; -fx-border-radius: 5; -fx-background-radius: 5;" />
+                </HBox>
+                
+                <Button fx:id="mainBtn" text="Sign In" maxWidth="Infinity" prefHeight="45.0" onAction="#handleAction" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-cursor: hand;" styleClass="button-primary" />
+                
+                <Label fx:id="statusLabel" wrapText="true" textAlignment="CENTER" />
+                
+                <Hyperlink fx:id="toggleLink" text="Don't have an account? Create one" onAction="#toggleMode" style="-fx-text-fill: #3498db; -fx-underline: false;" />
+                
+                <HBox fx:id="demoBox" spacing="10.0" alignment="CENTER">
+                    <Button text="Admin Demo" onAction="#fillAdminDemo" style="-fx-background-color: transparent; -fx-text-fill: #555; -fx-font-size: 11px;" />
+                    <Button text="User Demo" onAction="#fillUserDemo" style="-fx-background-color: transparent; -fx-text-fill: #555; -fx-font-size: 11px;" />
+                </HBox>
+            </VBox>
+        </VBox>
+    </ScrollPane>
+</StackPane>

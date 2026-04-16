@@ -5,15 +5,8 @@ This document provides a comprehensive overview of the database schema for the S
 ## ER Diagram
 
 ```mermaid
-erDiagram
-    USERS ||--o{ ORDERS : places
-    USERS ||--o{ REVIEWS : writes
-    CATEGORIES ||--o{ PRODUCTS : contains
-    PRODUCTS ||--o{ ORDER_ITEMS : "included in"
-    PRODUCTS ||--o{ REVIEWS : "is reviewed"
-    PRODUCTS ||--|| INVENTORY : "monitored by"
-    ORDERS ||--|{ ORDER_ITEMS : contains
-
+ER_Diagram
+    
     USERS {
         int user_id PK
         string name
